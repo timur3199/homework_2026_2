@@ -43,5 +43,26 @@ QUnit.module("Тестируем функцию fetchAndMerge", function() {
         const result = await fetchAndMergeData(urls);
         assert.deepEqual(result, {}, "Должно возвращать пустой объект при ошибке fetch");
     });
+
+    QUnit.test("Не дублирует одинаковые значения", async function(assert){
+        window.fetch = (url) => {
+            const data = {
+                'https://vk.example.com/mailru': {"city": "Москва"},
+                'https://vk.example.com/byte':  {"city": "Москва"},
+            };
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(data[url]),
+            });
+        };
+
+        const result = await fetchAndMergeData(['https://vk.example.com/mailru'], ['https://vk.example.com/byte']);
+        assert.deepEqual(result, {city: ["Москва"]}, "Значение не должно повторяться в массиве");
+    });
+
+    QUnit.test("Пустой массив массив urls возвращает пустой объект", async function(assert) {
+        const result = await fetchAndMergeData([])
+        assert.deepEqual(result, {}, "При пустом urls результат - пустой объект");
+    });
 });
 
