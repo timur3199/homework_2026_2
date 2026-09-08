@@ -56,13 +56,72 @@ QUnit.module("Тестируем функцию fetchAndMerge", function() {
             });
         };
 
-        const result = await fetchAndMergeData(['https://vk.example.com/mailru'], ['https://vk.example.com/byte']);
+        const result = await fetchAndMergeData(['https://vk.example.com/mailru', 'https://vk.example.com/byte']);
         assert.deepEqual(result, {city: ["Москва"]}, "Значение не должно повторяться в массиве");
     });
 
-    QUnit.test("Пустой массив массив urls возвращает пустой объект", async function(assert) {
-        const result = await fetchAndMergeData([])
+    QUnit.test("Пустой массив urls возвращает пустой объект", async function(assert) {
+        const result = await fetchAndMergeData([]);
         assert.deepEqual(result, {}, "При пустом urls результат - пустой объект");
+    });
+
+    QUnit.test("Бросает ошибку, если urls не массив", async function(assert) {
+        await assert.rejects(fetchAndMergeData(null), TypeError, "null должен приводить к TypeError");
+        await assert.rejects(fetchAndMergeData("abc"), TypeError, "строка должна приводить к TypeError");
+        await assert.rejects(fetchAndMergeData(undefined), TypeError, "undefined должен приводить к TypeError");
+        await assert.rejects(fetchAndMergeData(42), TypeError, "число должно приводить к TypeError");
+    });
+
+    QUnit.test("Запросы выполняются параллельно", async function(assert) {
+        const urls = ['url1', 'url2', 'url3', 'url4'];
+        let activeCalls = 0;
+        let maxActiveCalls = 0;
+
+        window.fetch = (url) => {
+            activeCalls++;
+            maxActiveCalls = Math.max(maxActiveCalls, activeCalls);
+
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    activeCalls--;
+                    resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ id: url }),
+                    });
+                }, 50);
+            });
+        };
+
+        await fetchAndMergeData(urls);
+
+        assert.strictEqual(maxActiveCalls, urls.length, "Все запросы должны стартовать одновременно, а не по очереди");
+    });
+
+    QUnit.test("Часть запросов упала, часть отработала", async function(assert) {
+        window.fetch = (url) => {
+            if (url === 'https://vk.example.com/broken') {
+                return Promise.reject(new Error("Network error"));
+            }
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({ city: "Москва" }),
+            });
+        };
+
+        const result = await fetchAndMergeData(['https://vk.example.com/broken', 'https://vk.example.com/ok']);
+        assert.deepEqual(result, { city: ["Москва"] }, "Данные с рабочей ссылки должны попасть в результат, сломанная — пропущена");
+    });
+
+    QUnit.test("Пропускает ответ с ok: false", async function(assert) {
+        window.fetch = () => {
+            return Promise.resolve({
+                ok: false,
+                json: () => Promise.resolve({ error: "Not found" }),
+            });
+        };
+
+        const result = await fetchAndMergeData(['https://vk.example.com/notfound']);
+        assert.deepEqual(result, {}, "Ответ с ok: false не должен попадать в результат");
     });
 });
 
