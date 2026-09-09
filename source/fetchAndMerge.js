@@ -8,7 +8,7 @@
  *
  * @async
  * @param {Array<string>} urls список адресов для загрузки
- * @throws {TypeError} если urls не является массивом
+ * @throws {TypeError} если urls не является массивом строк
  * @returns {Promise<Object>} объект с объединенными данными
  *
  * @example
@@ -16,11 +16,9 @@
  * fetchAndMergeData(['url1', 'url2']);
  */
 async function fetchAndMergeData(urls) {
-    if (!Array.isArray(urls)) {
-        throw new TypeError('urls must be an array');
+    if (!Array.isArray(urls) || !urls.every((url) => typeof url === 'string')) {
+        throw new TypeError('urls must be an array of strings');
     }
-
-    const result = {};
 
     const settled = await Promise.allSettled(
         urls.map((url) =>
@@ -33,12 +31,11 @@ async function fetchAndMergeData(urls) {
         )
     );
 
-    for (const item of settled) {
+    return settled.reduce((result, item) => {
         if (item.status !== 'fulfilled') {
-            continue;
+            return result;
         }
-        const data = item.value;
-        for (const [key, value] of Object.entries(data)) {
+        for (const [key, value] of Object.entries(item.value)) {
             if (!result[key]) {
                 result[key] = [];
             }
@@ -46,6 +43,6 @@ async function fetchAndMergeData(urls) {
                 result[key].push(value);
             }
         }
-    }
-    return result;
+        return result;
+    }, {});
 }
