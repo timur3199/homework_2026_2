@@ -68,11 +68,11 @@ QUnit.module("Тестируем функцию fetchAndMerge", function() {
     QUnit.test("Бросает ошибку, если urls не массив", async function(assert) {
         const isValidationError = (error) =>
             error instanceof TypeError && error.message === 'urls must be an array';
-        
-        await assert.rejects(fetchAndMergeData(null), TypeError, "null должен приводить к TypeError");
-        await assert.rejects(fetchAndMergeData("abc"), TypeError, "строка должна приводить к TypeError");
-        await assert.rejects(fetchAndMergeData(undefined), TypeError, "undefined должен приводить к TypeError");
-        await assert.rejects(fetchAndMergeData(42), TypeError, "число должно приводить к TypeError");
+
+        await assert.rejects(fetchAndMergeData(null), isValidationError, "null должен приводить к TypeError");
+        await assert.rejects(fetchAndMergeData("abc"), isValidationError, "строка должна приводить к TypeError");
+        await assert.rejects(fetchAndMergeData(undefined), isValidationError, "undefined должен приводить к TypeError");
+        await assert.rejects(fetchAndMergeData(42), isValidationError, "число должно приводить к TypeError");
     });
 
     QUnit.test("Запросы выполняются параллельно", async function(assert) {
