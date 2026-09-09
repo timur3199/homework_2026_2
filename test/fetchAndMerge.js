@@ -15,7 +15,7 @@ QUnit.module("Тестируем функцию fetchAndMerge", function() {
             "surname": ["Петров", "Иванова"],
             "status": ["Дуров, верни стену!"],
         };
-        
+
         window.fetch = (url) => {
             const data = {
                 'https://vk.example.com/vkid': { "id": 1, "name": "Олег", "surname": "Петров", "age": 25, "status": "Дуров, верни стену!" },
@@ -66,6 +66,9 @@ QUnit.module("Тестируем функцию fetchAndMerge", function() {
     });
 
     QUnit.test("Бросает ошибку, если urls не массив", async function(assert) {
+        const isValidationError = (error) =>
+            error instanceof TypeError && error.message === 'urls must be an array';
+        
         await assert.rejects(fetchAndMergeData(null), TypeError, "null должен приводить к TypeError");
         await assert.rejects(fetchAndMergeData("abc"), TypeError, "строка должна приводить к TypeError");
         await assert.rejects(fetchAndMergeData(undefined), TypeError, "undefined должен приводить к TypeError");
