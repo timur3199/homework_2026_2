@@ -75,6 +75,15 @@ QUnit.module("Тестируем функцию fetchAndMerge", function() {
         await assert.rejects(fetchAndMergeData(42), isValidationError, "число должно приводить к TypeError");
     });
 
+    QUnit.test("Бросает ошибку, если в urls передали не массив строк", async function(assert) {
+        const isValidationError = (error) =>
+            error instanceof TypeError && error.message === 'urls must be an array of strings';
+
+        await assert.rejects(fetchAndMergeData([1, 2, 3]), isValidationError, "бросаем нашу ошибку, если наш объект - массив чисел");
+        await assert.rejects(fetchAndMergeData(['url1', null]), isValidationError, "бросаем нашу ошибку, если передаем массив разных типов");
+        await assert.rejects(fetchAndMergeData([{}, {}]), isValidationError, "бросаем нашу ошибку, если передаем массив пустых объектов");
+    });
+
     QUnit.test("Запросы выполняются параллельно", async function(assert) {
         const urls = ['url1', 'url2', 'url3', 'url4'];
         let activeCalls = 0;
